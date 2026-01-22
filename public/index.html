@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kolay CMR Oluşturucu</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f4f4f9; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        .row { display: flex; gap: 20px; margin-bottom: 15px; }
+        .col { flex: 1; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .section-title { margin-top: 20px; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 15px; color: #555; }
+        button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; font-size: 16px; border-radius: 4px; cursor: pointer; margin-top: 20px; }
+        button:hover { background: #218838; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CMR Belgesi Oluştur</h1>
+        <form id="cmrForm">
+            
+            <div class="section-title">1. Gönderici</div>
+            <input type="text" id="senderName" placeholder="Firma Adı" value="Örnek İhracat Ltd. Şti.">
+            <input type="text" id="senderAddress" placeholder="Adres" style="margin-top:5px;" value="Organize Sanayi Bölgesi">
+            <input type="text" id="senderCity" placeholder="Şehir/Ülke" style="margin-top:5px;" value="İstanbul, TR">
+
+            <div class="section-title">2. Alıcı</div>
+            <input type="text" id="consigneeName" placeholder="Firma Adı" value="Global Import GmbH">
+            <input type="text" id="consigneeAddress" placeholder="Adres" style="margin-top:5px;" value="Berliner Strasse 10">
+            <input type="text" id="consigneeCity" placeholder="Şehir/Ülke" style="margin-top:5px;" value="Munich, DE">
+
+            <div class="row" style="margin-top:15px;">
+                <div class="col">
+                    <label>Yükleme Yeri</label>
+                    <input type="text" id="pickup" value="İstanbul, Türkiye">
+                </div>
+                <div class="col">
+                    <label>Teslim Yeri</label>
+                    <input type="text" id="delivery" value="Munich, Germany">
+                </div>
+            </div>
+
+            <div class="section-title">Yük Bilgileri (Örnek)</div>
+            <div class="row">
+                <div class="col"><input type="text" id="goodsMark" value="Palet 1"></div>
+                <div class="col"><input type="text" id="goodsNature" value="Oto Yedek Parça"></div>
+                <div class="col"><input type="text" id="goodsWeight" value="150 kg"></div>
+            </div>
+
+            <button type="submit">CMR PDF İNDİR</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('cmrForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.innerText = "Oluşturuluyor...";
+            btn.disabled = true;
+
+            const data = {
+                sender: { 
+                    name: document.getElementById('senderName').value,
+                    address: document.getElementById('senderAddress').value,
+                    city: document.getElementById('senderCity').value
+                },
+                consignee: { 
+                    name: document.getElementById('consigneeName').value,
+                    address: document.getElementById('consigneeAddress').value,
+                    city: document.getElementById('consigneeCity').value
+                },
+                pickup: document.getElementById('pickup').value,
+                delivery: document.getElementById('delivery').value,
+                goods: [
+                    { 
+                        marks: document.getElementById('goodsMark').value,
+                        nature: document.getElementById('goodsNature').value,
+                        weight: document.getElementById('goodsWeight').value
+                    }
+                ],
+                carrier: { name: "SPEEDY LOJISTIK", address: "Istanbul" }
+            };
+
+            try {
+                // Sunucuya istek at (Ayni domain altinda /api/create-cmr)
+                const response = await fetch('/api/create-cmr', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "cmr_belgesi.pdf";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else {
+                    alert("Bir hata oluştu.");
+                }
+            } catch (err) {
+                alert("Sunucu hatası: " + err);
+            }
+            
+            btn.innerText = "CMR PDF İNDİR";
+            btn.disabled = false;
+        });
+    </script>
+</body>
+</html>
